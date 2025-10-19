@@ -1,6 +1,6 @@
 import { Component, ViewChild, ElementRef, signal, effect } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartData, Chart, registerables } from 'chart.js';
+import { ChartConfiguration, ChartData, Chart, registerables, Title } from 'chart.js';
 import html2canvas from 'html2canvas';
 import { CommonModule } from '@angular/common';
 
@@ -18,10 +18,13 @@ Chart.register(ChartDataLabels);
   styleUrls: ['./app.scss'],
 })
 export class App {
-  title = 'Speed Pie Chart';
 
-  @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
-  @ViewChild('chartContainer') chartContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('chartContainer') chartContainer?: ElementRef<HTMLCanvasElement>;
+  chart!: Chart<'pie'>;
+
+  chartData: ChartData<'pie'> | undefined;
+  chartOptions: ChartConfiguration<'pie'>['options'] | undefined;
+  chartType: 'pie' = 'pie';
 
   currentPage = signal<'input' | 'preview'>('input');
   theme = signal<'light' | 'dark'>('light');
@@ -36,6 +39,7 @@ export class App {
   hasError = signal(false);
   invalidIndices = signal<number[]>([]);
 
+  chartTitle = signal('');
 
   // --- 新增 render 資料 ---
   renderLabels = signal<string[]>([]);
@@ -46,21 +50,16 @@ export class App {
     effect(() => {
       const t = this.theme();
       document.documentElement.dataset['theme'] = t;
-
-      // 更新 legend 顏色
-      if (this.chart?.options?.plugins?.legend?.labels) {
-        this.chart.options.plugins.legend.labels.color = t === 'dark' ? '#eee' : '#333';
-      }
-
-      this.chart?.update();
+      this.chartData = this.buildChartData();
+      this.chartOptions = this.buildChartOptions();
     });
 
     // 初始 render 資料
-    this.updateRenderData();
+    this.updateSortedData();
   }
+  
 
-
-  updateRenderData() {
+  updateSortedData() {
     const labels = [...this.labels()];
     const values = [...this.values()];
     const combined = labels.map((l, i) => ({ label: l, value: values[i], idx: i }));
@@ -75,9 +74,8 @@ export class App {
     this.renderLabels.set(combined.map(c => c.label));
     this.renderValues.set(combined.map(c => c.value));
 
-    this.chart?.update();
   }
-
+  
 
   getTotal(): number {
     return this.renderValues().reduce((a, b) => a + b, 0);
@@ -88,18 +86,21 @@ export class App {
   lightColors = ['#0078D4', '#59B2FF', '#A0D2FF', '#F9A8D4', '#FDBA74', '#A7F3D0', '#FECACA'];
   darkColors = ['#4CC9F0', '#4895EF', '#4361EE', '#3A0CA3', '#7209B7', '#F72585', '#FFBA08'];
 
-  get chartData(): ChartData<'pie'> {
+
+  private buildChartData(): ChartData<'pie'> {
     const colors = this.theme() === 'light' ? this.lightColors : this.darkColors;
     return {
-      labels: this.renderLabels(), // ✅ 使用排序後的 labels
+      labels: this.renderLabels(),
       datasets: [
         {
-          data: this.renderValues(), // ✅ 與 labels 對齊
+          data: this.renderValues(),
           backgroundColor: colors.slice(0, this.renderLabels().length),
           borderColor: '#fff',
           borderWidth: 2,
           datalabels: {
             color: this.theme() === 'dark' ? '#fff' : '#000',
+            textStrokeColor: this.theme() === 'dark' ? '#333' : '#fff',
+            textStrokeWidth: 5,
 
             font: { size: 24 },
             formatter: (value, ctx) => {
@@ -121,23 +122,32 @@ export class App {
     };
   }
 
-
-  chartOptions: ChartConfiguration<'pie'>['options'] = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          color: this.theme() === 'dark' ? '#eee' : '#333', // ← 關鍵
-          font: {
-            size: 14,
+  private buildChartOptions(): ChartConfiguration<'pie'>['options'] {
+   return {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: this.theme() === 'dark' ? '#eee' : '#333',
+            font: {
+              size: 14,
+            },
           },
         },
+  
+        title: {
+          display: !!this.chartTitle(),
+          text: this.chartTitle(),
+          color: this.theme() === 'dark' ? '#eee' : '#333',
+          font: { size: 20, weight: 'bold' },
+          padding: { top: 10, bottom: 20 },
+        },
       },
-    },
-  };
+    };
+  }
+  
 
-  chartType: 'pie' = 'pie';
 
   trackByIndex(index: number): number {
     return index;
@@ -148,14 +158,14 @@ export class App {
     const newLabels = [...this.labels()];
     newLabels[i] = v;
     this.labels.set(newLabels);
-    this.updateRenderData();
+    this.updateSortedData();
   }
 
   updateValue(i: number, v: number) {
     const newValues = [...this.values()];
     newValues[i] = v;
     this.values.set(newValues);
-    this.updateRenderData();
+    this.updateSortedData();
 
     // 若使用者修正錯誤值，動態清除錯誤標記
     const invalid = this.invalidIndices().filter(x => x !== i);
@@ -164,19 +174,23 @@ export class App {
     this.hasError.set(invalid.length > 0);
   }
 
+  updateTitle(v: string) {
+    this.chartTitle.set(v);
+  }
+
 
   addRow() {
     this.labels.set([...this.labels(), '新項目']);
     this.values.set([...this.values(), 0]);
-    this.updateRenderData();
-    this.recomputeInvalid(); 
+    this.updateSortedData();
+    this.recomputeInvalid();
   }
 
   removeRow(i: number) {
     this.labels.set(this.labels().filter((_, x) => x !== i));
     this.values.set(this.values().filter((_, x) => x !== i));
-    this.updateRenderData();
-    this.recomputeInvalid(); 
+    this.updateSortedData();
+    this.recomputeInvalid();
   }
 
   moveUp(i: number) {
@@ -189,10 +203,10 @@ export class App {
 
     this.labels.set(labels);
     this.values.set(values);
-    this.updateRenderData();
+    this.updateSortedData();
 
     this.sortOrder.set('input');
-    this.recomputeInvalid(); 
+    this.recomputeInvalid();
     this.flashRow(i);
     this.flashRow(i - 1);
   }
@@ -208,10 +222,10 @@ export class App {
 
     this.labels.set(labels);
     this.values.set(values);
-    this.updateRenderData();
+    this.updateSortedData();
 
     this.sortOrder.set('input');
-    this.recomputeInvalid(); 
+    this.recomputeInvalid();
     this.flashRow(i);
     this.flashRow(i + 1);
   }
@@ -275,12 +289,14 @@ export class App {
 
 
 
-  goToPreview() {
-    if (!this.validateValues()) return; // 若檢查不通過，中止
-    this.hasError.set(false);
-    this.currentPage.set('preview');
-  }
-
+goToPreview() {
+  if (!this.validateValues()) return;
+  this.hasError.set(false);
+  this.chartData = this.buildChartData();
+  this.chartOptions = this.buildChartOptions();
+  this.currentPage.set('preview');
+}
+ 
   goToInput() {
     this.currentPage.set('input');
   }

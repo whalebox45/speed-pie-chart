@@ -58,9 +58,11 @@
       <fieldset>
         <legend>圖表標題</legend>
         <input
-          type="text"
-          placeholder="選填, 例如：各區銷售比例"
-        />
+        type="text"
+        [value]="chartTitle()"
+        (input)="updateTitle($any($event.target).value)"
+        placeholder="輸入圖表標題"
+      />
       </fieldset>
       <fieldset class="option-fieldset">
         <legend>項目排序</legend>
@@ -70,7 +72,7 @@
             name="sort"
             value="input"
             [checked]="sortOrder() === 'input'"
-            (change)="sortOrder.set('input'); updateRenderData()"
+            (change)="sortOrder.set('input'); updateSortedData()"
           />
           輸入資料
         </label>
@@ -80,7 +82,7 @@
             name="sort"
             value="desc"
             [checked]="sortOrder() === 'desc'"
-            (change)="sortOrder.set('desc'); updateRenderData()"
+            (change)="sortOrder.set('desc'); updateSortedData()"
           />
           降序
         </label>
@@ -90,7 +92,7 @@
             name="sort"
             value="asc"
             [checked]="sortOrder() === 'asc'"
-            (change)="sortOrder.set('asc'); updateRenderData()"
+            (change)="sortOrder.set('asc'); updateSortedData()"
           />
           升序
         </label>
