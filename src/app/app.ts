@@ -9,7 +9,6 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 Chart.register(...registerables);
 Chart.register(ChartDataLabels);
 
-
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -57,7 +56,7 @@ export class App {
     // 初始 render 資料
     this.updateSortedData();
   }
-  
+
 
   updateSortedData() {
     const labels = [...this.labels()];
@@ -75,7 +74,7 @@ export class App {
     this.renderValues.set(combined.map(c => c.value));
 
   }
-  
+
 
   getTotal(): number {
     return this.renderValues().reduce((a, b) => a + b, 0);
@@ -102,19 +101,50 @@ export class App {
             textStrokeColor: this.theme() === 'dark' ? '#333' : '#fff',
             textStrokeWidth: 5,
 
-            font: { size: 24 },
-            formatter: (value, ctx) => {
-              const mode = this.labelMode();
-              const label = this.renderLabels()[ctx.dataIndex] ?? ''; // ✅ 直接用 renderLabels
+            font: (ctx) => {
               const data = this.renderValues();
               const total = data.reduce((a, b) => a + b, 0);
-              const percentage = ((value / total) * 100).toFixed(1) + '%';
-
+              const value = data[ctx.dataIndex];
+              const percent = (value / total) * 100;
+            
+              return {
+                size: percent < 10 ? 10: 20,  // 小於10%的用12px，大的用20px
+                weight: 'bold',
+              };
+            },
+            formatter: (value, ctx) => {
+              const mode = this.labelMode();
+              const label = this.renderLabels()[ctx.dataIndex] ?? '';
+              const data = this.renderValues();
+              const total = data.reduce((a, b) => a + b, 0);
+              const percentage = ((value / total) * 100);
+              const percentageText = percentage.toFixed(1) + '%';
 
               if (mode === 'none') return '';
-              if (mode === 'percent') return percentage;
+              if (mode === 'percent') return percentageText;
               if (mode === 'value') return value;
               return `${label}: ${value}`;
+            },
+
+            // 動態判斷占比小的往外拉
+            align: (ctx) => {
+              const data = this.renderValues();
+              const total = data.reduce((a, b) => a + b, 0);
+              const value = data[ctx.dataIndex];
+              return (value / total) * 100 < 10 ? 'start' : 'center';
+            },
+            anchor: (ctx) => {
+              const data = this.renderValues();
+              const total = data.reduce((a, b) => a + b, 0);
+              const value = data[ctx.dataIndex];
+              return (value / total) * 100 < 10 ? 'end' : 'center';
+            },
+            clamp: true,
+            offset: (ctx) => {
+              const data = this.renderValues();
+              const total = data.reduce((a, b) => a + b, 0);
+              const value = data[ctx.dataIndex];
+              return (value / total) * 100 < 10 ? 30 * ctx.dataIndex : 0; // 小項目往外拉 30px
             },
           },
         },
@@ -123,10 +153,11 @@ export class App {
   }
 
   private buildChartOptions(): ChartConfiguration<'pie'>['options'] {
-   return {
+    return {
       responsive: true,
       plugins: {
         legend: {
+          onClick: (e) => (e as unknown as MouseEvent).stopPropagation(),
           position: 'bottom',
           labels: {
             color: this.theme() === 'dark' ? '#eee' : '#333',
@@ -135,7 +166,7 @@ export class App {
             },
           },
         },
-  
+
         title: {
           display: !!this.chartTitle(),
           text: this.chartTitle(),
@@ -146,7 +177,7 @@ export class App {
       },
     };
   }
-  
+
 
 
   trackByIndex(index: number): number {
@@ -289,14 +320,15 @@ export class App {
 
 
 
-goToPreview() {
-  if (!this.validateValues()) return;
-  this.hasError.set(false);
-  this.chartData = this.buildChartData();
-  this.chartOptions = this.buildChartOptions();
-  this.currentPage.set('preview');
-}
- 
+  goToPreview() {
+    if (!this.validateValues()) return;
+    if (this.labels().length < 1) return;
+    this.hasError.set(false);
+    this.chartData = this.buildChartData();
+    this.chartOptions = this.buildChartOptions();
+    this.currentPage.set('preview');
+  }
+
   goToInput() {
     this.currentPage.set('input');
   }

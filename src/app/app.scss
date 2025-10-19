@@ -132,3 +132,27 @@ button.full {
 .preview-mode .preview-page {
   transform: translateX(0);
 }
+
+@media print {
+  #chartContainer {
+    height: auto;
+  }
+  .noprint {
+    display: none !important;
+  }
+  ::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+  html, body {
+    overflow: hidden !important; /* 強制不顯示捲軸 */
+  }
+  body {
+    scrollbar-width: none; /* 隱藏 Firefox 的捲軸 */
+  }
+
+  /* 避免表格或容器溢出時出現陰影框線 */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

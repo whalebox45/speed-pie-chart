@@ -17,7 +17,7 @@
           type="text"
           [value]="labels()[i]"
           (input)="updateLabel(i, $any($event.target).value)"
-          placeholder="項目名稱"
+          placeholder="項目名稱(選填)"
         />
         <input
           type="number"
@@ -29,19 +29,19 @@
         />
 
         <div class="item-buttons">
-          <button type="button" class="primary" (click)="moveUp(i)" aria-label="上移">
+          <button type="button" class="primary" (click)="moveUp(i)"  [disabled]="i === 0" aria-label="上移">
             <i class="fa-solid fa-chevron-up"></i>
           </button>
-          <button type="button" class="primary" (click)="moveDown(i)" aria-label="下移">
+          <button type="button" class="primary" (click)="moveDown(i)" [disabled]="i === labels().length - 1" aria-label="下移">
             <i class="fa-solid fa-chevron-down"></i>
           </button>
-          <button type="button" class="danger" (click)="removeRow(i)" aria-label="刪除">
+          <button type="button" class="danger" (click)="removeRow(i)" [disabled]="labels().length < 2" aria-label="刪除">
             <i class="fa-solid fa-trash"></i>
           </button>
         </div>
       </div>
 
-      <button type="button" (click)="addRow()" class="secondary full">
+      <button type="button" (click)="addRow()" class="secondary full" [disabled]="labels().length >= 20">
         <i class="fa-solid fa-plus"></i> 新增項目
       </button>
     </form>
@@ -59,9 +59,10 @@
         <legend>圖表標題</legend>
         <input
         type="text"
+        maxlength="50"
         [value]="chartTitle()"
         (input)="updateTitle($any($event.target).value)"
-        placeholder="輸入圖表標題"
+        placeholder="圖表標題(選填), 例如: 銷售分佈"
       />
       </fieldset>
       <fieldset class="option-fieldset">
@@ -107,7 +108,7 @@
             name="labelMode"
             value="labelValue"
             [checked]="labelMode() === 'labelValue'"
-            (change)="labelMode.set('labelValue'); chart?.update()"
+            (change)="labelMode.set('labelValue');"
           />
           項目 + 數值
         </label>
@@ -118,7 +119,7 @@
             name="labelMode"
             value="value"
             [checked]="labelMode() === 'value'"
-            (change)="labelMode.set('value'); chart?.update()"
+            (change)="labelMode.set('value');"
           />
           只顯示數值
         </label>
@@ -129,7 +130,7 @@
             name="labelMode"
             value="percent"
             [checked]="labelMode() === 'percent'"
-            (change)="labelMode.set('percent'); chart?.update()"
+            (change)="labelMode.set('percent');"
           />
           百分比
         </label>
@@ -139,7 +140,7 @@
             name="labelMode"
             value="none"
             [checked]="labelMode() === 'none'"
-            (change)="labelMode.set('none'); chart?.update()"
+            (change)="labelMode.set('none');"
           />
           無
         </label>
@@ -152,18 +153,19 @@
 
   <!-- ===== Preview Page ===== -->
   <section class="page preview-page" *ngIf="currentPage() === 'preview'">
-    <header>
+    <header class="noprint">
       <h2>預覽結果</h2>
       <button class="contrast" (click)="toggleTheme()" aria-label="切換主題">
         <i class="fa-solid" [ngClass]="theme() === 'light' ? 'fa-moon' : 'fa-sun'"></i>
       </button>
     </header>
+    
 
     <div id="chartContainer" #chartContainer>
       <canvas baseChart [data]="chartData" [type]="chartType" [options]="chartOptions"></canvas>
     </div>
 
-    <div class="grid">
+    <div class="grid noprint">
       <button (click)="downloadChart('png')" type="button">下載 PNG</button>
       <button (click)="downloadChart('jpg')" type="button">下載 JPG</button>
     </div>
@@ -188,12 +190,13 @@
       </tbody>
     </table>
 
-    <button class="secondary full" type="button" (click)="goToInput()">
+    <button class="secondary full noprint" type="button" (click)="goToInput()">
       <i class="fa-solid fa-chevron-left"></i> 返回
     </button>
 
     <footer>
-      <p>Created by Kei</p>
+      <p>Made with Speed Pie Chart</p>
+      <p class="noprint">Created by Kei</p>
     </footer>
   </section>
 </main>
