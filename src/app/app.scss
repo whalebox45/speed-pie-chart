@@ -1,0 +1,134 @@
+main.container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  margin: 0 auto;
+  background: var(--pico-background-color);
+}
+
+.page {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--pico-background-color);
+  color: var(--pico-color);
+  transition: transform 0.3s ease;
+}
+
+header,
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* 預覽圖中央置中 */
+#chartContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 65vh;
+}
+
+/* 每一列輸入區 */
+.item-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 10px 1px 10px 1px;
+  align-items: center;
+  /* 讓輸入欄平均分配空間 */
+  input[type='text'],
+  input[type='number'] {
+    flex: 1;
+    min-width: 0;
+    margin: auto 0 auto 0;
+  }
+
+  /* 被移動行的動畫狀態 */
+  &.moved {
+    animation: rowFlash 0.6s ease;
+  }
+}
+
+/* 按鈕容器 */
+.item-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 0.25rem;
+  height: 100%;
+  /* 小按鈕統一尺寸 */
+  button {
+    padding: 0.3rem;
+    line-height: 1;
+    width: 2.2rem;
+    height: 2.2rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+  }
+  i {
+    font-size: 1rem;
+  }
+}
+
+/* danger 樣式 (Pico 沒內建) */
+.danger {
+  color: var(--pico-color-red-500);
+}
+input.danger {
+  border-color: var(--pico-color-red-500);
+}
+button.danger {
+  background-color: var(--pico-color-red-500);
+  color: #fff;
+  border: none;
+  &:hover {
+    filter: brightness(0.9);
+  }
+}
+
+/* 寬版按鈕 */
+button.full {
+  width: 100%;
+}
+
+.option-fieldset{
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
+
+@keyframes rowFlash {
+  0% {
+    background-color: var(--pico-color-amber-200);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* 轉場動畫 */
+.input-page {
+  transform: translateX(0);
+}
+.preview-mode .input-page {
+  transform: translateX(-100%);
+}
+.preview-page {
+  transform: translateX(100%);
+}
+.preview-mode .preview-page {
+  transform: translateX(0);
+}

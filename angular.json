@@ -27,6 +27,9 @@
               }
             ],
             "styles": [
+              "node_modules/@picocss/pico/css/pico.min.css",
+              "node_modules/@picocss/pico/css/pico.colors.min.css",
+              "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
               "src/styles.scss"
             ]
           },
@@ -81,6 +84,9 @@
               }
             ],
             "styles": [
+              "node_modules/@picocss/pico/css/pico.min.css",
+              "node_modules/@picocss/pico/css/pico.colors.min.css",
+              "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
               "src/styles.scss"
             ]
           }
