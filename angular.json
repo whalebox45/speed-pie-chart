@@ -36,6 +36,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "/speed-pie-chart/",
               "budgets": [
                 {
                   "type": "initial",
