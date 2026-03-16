@@ -12,7 +12,7 @@
     <h2>輸入資料</h2>
 
     <form>
-      <div *ngFor="let label of labels(); let i = index; trackBy: trackByIndex" class="item-row">
+      <div *ngFor="let label of labels(); let i = index; trackBy: trackByIndex" class="item-row" #itemRow>
         <input
           type="text"
           [value]="labels()[i]"
@@ -147,7 +147,7 @@
       </fieldset>
     </form>
     <footer>
-      <p>Created by Kei</p>
+      <p>Created by Whale</p>
     </footer>
   </section>
 
@@ -196,7 +196,7 @@
 
     <footer>
       <p>Made with Speed Pie Chart</p>
-      <p class="noprint">Created by Kei</p>
+      <p class="noprint">Created by Whale</p>
     </footer>
   </section>
 </main>

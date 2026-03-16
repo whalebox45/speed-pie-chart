@@ -1,6 +1,6 @@
-import { Component, ViewChild, ElementRef, signal, effect } from '@angular/core';
+import { Component, ViewChild, ViewChildren, ElementRef, QueryList, signal } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartData, Chart, registerables, Title } from 'chart.js';
+import { ChartConfiguration, ChartData, Chart, registerables } from 'chart.js';
 import html2canvas from 'html2canvas';
 import { CommonModule } from '@angular/common';
 
@@ -18,8 +18,8 @@ Chart.register(ChartDataLabels);
 })
 export class App {
 
-  @ViewChild('chartContainer') chartContainer?: ElementRef<HTMLCanvasElement>;
-  chart!: Chart<'pie'>;
+  @ViewChild('chartContainer') chartContainer?: ElementRef<HTMLDivElement>;
+  @ViewChildren('itemRow') itemRows!: QueryList<ElementRef<HTMLDivElement>>;
 
   chartData: ChartData<'pie'> | undefined;
   chartOptions: ChartConfiguration<'pie'>['options'] | undefined;
@@ -45,16 +45,17 @@ export class App {
   renderValues = signal<number[]>([]);
 
   constructor() {
-    // 監看 theme 變化 → 更新 HTML data-theme
-    effect(() => {
-      const t = this.theme();
-      document.documentElement.dataset['theme'] = t;
-      this.chartData = this.buildChartData();
-      this.chartOptions = this.buildChartOptions();
-    });
+    // 初始化 theme
+    document.documentElement.dataset['theme'] = this.theme();
 
     // 初始 render 資料
     this.updateSortedData();
+  }
+
+  private applyTheme() {
+    document.documentElement.dataset['theme'] = this.theme();
+    this.chartData = this.buildChartData();
+    this.chartOptions = this.buildChartOptions();
   }
 
 
@@ -108,7 +109,7 @@ export class App {
               const percent = (value / total) * 100;
             
               return {
-                size: percent < 10 ? 10: 20,  // 小於10%的用12px，大的用20px
+                size: percent < 10 ? 10: 20,  // 小於10%的用10px，大的用20px
                 weight: 'bold',
               };
             },
@@ -144,7 +145,7 @@ export class App {
               const data = this.renderValues();
               const total = data.reduce((a, b) => a + b, 0);
               const value = data[ctx.dataIndex];
-              return (value / total) * 100 < 10 ? 30 * ctx.dataIndex : 0; // 小項目往外拉 30px
+              return (value / total) * 100 < 10 ? 30 : 0;
             },
           },
         },
@@ -214,14 +215,14 @@ export class App {
     this.labels.set([...this.labels(), '新項目']);
     this.values.set([...this.values(), 0]);
     this.updateSortedData();
-    this.recomputeInvalid();
+    this.validateValues();
   }
 
   removeRow(i: number) {
     this.labels.set(this.labels().filter((_, x) => x !== i));
     this.values.set(this.values().filter((_, x) => x !== i));
     this.updateSortedData();
-    this.recomputeInvalid();
+    this.validateValues();
   }
 
   moveUp(i: number) {
@@ -237,7 +238,7 @@ export class App {
     this.updateSortedData();
 
     this.sortOrder.set('input');
-    this.recomputeInvalid();
+    this.validateValues();
     this.flashRow(i);
     this.flashRow(i - 1);
   }
@@ -256,44 +257,31 @@ export class App {
     this.updateSortedData();
 
     this.sortOrder.set('input');
-    this.recomputeInvalid();
+    this.validateValues();
     this.flashRow(i);
     this.flashRow(i + 1);
   }
 
   flashRow(index: number) {
-    // 找到對應的 DOM 元素
-    const rows = document.querySelectorAll('.item-row');
-    const row = rows[index] as HTMLElement;
-    if (!row) return;
-
-    row.classList.add('moved');
-    setTimeout(() => row.classList.remove('moved'), 600);
+    const rowRef = this.itemRows?.get(index);
+    if (!rowRef) return;
+    const el = rowRef.nativeElement;
+    el.classList.add('moved');
+    setTimeout(() => el.classList.remove('moved'), 600);
   }
 
 
 
-  // === 新增驗證函式 ===
+  // === 驗證函式 ===
+  /** 重新計算錯誤索引，回傳是否全部合法 */
   validateValues(): boolean {
-    const invalid: number[] = [];
-    const vals = this.values();
-    vals.forEach((v, i) => {
-      if (v < 0 || isNaN(v)) invalid.push(i);
-    });
-
-    this.invalidIndices.set(invalid);
-    const hasError = invalid.length > 0;
-    this.hasError.set(hasError);
-    return !hasError;
-  }
-
-  recomputeInvalid(): void {
     const invalid: number[] = [];
     this.values().forEach((v, i) => {
       if (v < 0 || isNaN(v)) invalid.push(i);
     });
     this.invalidIndices.set(invalid);
     this.hasError.set(invalid.length > 0);
+    return invalid.length === 0;
   }
 
   async downloadChart(format: 'png' | 'jpg' = 'png') {
@@ -335,5 +323,6 @@ export class App {
 
   toggleTheme() {
     this.theme.set(this.theme() === 'light' ? 'dark' : 'light');
+    this.applyTheme();
   }
 }
